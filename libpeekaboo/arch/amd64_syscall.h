@@ -5,7 +5,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
-int amd64_syscall_pp(regfile_amd64_t *regfile, uint64_t rvalue, bool print_details);
+int amd64_syscall_pp(uint64_t *regfile, uint64_t rvalue, bool print_details);
 
 typedef struct sysent {
 	unsigned int nargs;

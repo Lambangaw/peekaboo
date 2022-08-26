@@ -16,15 +16,8 @@
 
 #include "amd64_syscall.h"
 
-static const uint64_t args_offset[] =
-{
-    [0] = offsetof(amd64_cpu_gr_t, reg_rdi) / sizeof(uint64_t),
-    [1] = offsetof(amd64_cpu_gr_t, reg_rsi) / sizeof(uint64_t),
-    [2] = offsetof(amd64_cpu_gr_t, reg_rdx) / sizeof(uint64_t),
-    [3] = offsetof(amd64_cpu_gr_t, reg_rcx) / sizeof(uint64_t),
-    [4] = offsetof(amd64_cpu_gr_t, reg_r8) / sizeof(uint64_t),
-    [5] = offsetof(amd64_cpu_gr_t, reg_r9) / sizeof(uint64_t),
-};
+
+static const uint64_t args_offset[6];
 
 static const struct_syscall_info syscall_infos[] = 
 {
@@ -366,9 +359,10 @@ static const struct_syscall_info syscall_infos[] =
     /* [335 ... 423] - reserved to sync up with other architectures */
 };
 
-int amd64_syscall_pp(regfile_amd64_t *regfile, uint64_t rvalue, bool print_details)
+int amd64_syscall_pp(uint64_t *regfile, uint64_t rvalue, bool print_details)
 {
-	const uint64_t syscall_id = regfile->gpr.reg_rax;
+    printf("regfile %d rvalue %d\n",regfile[7],rvalue);
+	const uint64_t syscall_id = regfile[7];
 	if (syscall_id >= sizeof(syscall_infos)/sizeof(struct_syscall_info))
 	{
 		// Unrecognized syscall ID. Return.
@@ -391,7 +385,7 @@ int amd64_syscall_pp(regfile_amd64_t *regfile, uint64_t rvalue, bool print_detai
 	for (arg_idx = 0; arg_idx < syscall_info->nargs; arg_idx++)
 	{
 		if (arg_idx != 0) printf(", ");
-		printf("0x%lx", ((uint64_t *)&regfile->gpr)[args_offset[arg_idx]]);
+		printf("0x%lx", regfile[arg_idx]);
 	}
 	printf(") = 0x%lx", rvalue);
 	return 0;

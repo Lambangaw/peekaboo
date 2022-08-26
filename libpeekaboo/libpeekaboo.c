@@ -81,6 +81,7 @@ void close_trace(peekaboo_trace_t *trace_ptr)
 	fflush(trace_ptr->regfile);
 	fflush(trace_ptr->memfile);
 	fflush(trace_ptr->memrefs);
+	fflush(trace_ptr->offset_regfile);
 	//fflush(trace_ptr->metafile);
 
 	fclose(trace_ptr->insn_trace);
@@ -88,6 +89,7 @@ void close_trace(peekaboo_trace_t *trace_ptr)
 	fclose(trace_ptr->regfile);
 	fclose(trace_ptr->memfile);
 	fclose(trace_ptr->memrefs);
+	fclose(trace_ptr->offset_regfile);
 	//fclose(trace_ptr->metafile);
 }
 
@@ -109,7 +111,7 @@ peekaboo_trace_t *create_trace(char *name)
 	create_trace_file(dir_path, "memfile", MAX_PATH, &trace_ptr->memfile);
 	create_trace_file(dir_path, "memrefs", MAX_PATH, &trace_ptr->memrefs);
 	create_trace_file(dir_path, "metafile", MAX_PATH, &trace_ptr->metafile);
-
+	create_trace_file(dir_path, "offset_regfile", MAX_PATH, &trace_ptr->offset_regfile);
 	/* Since version 2, insn.bytemap is shared by all threads. So we do not create
 	 * here.
 	 */
@@ -162,6 +164,11 @@ size_t get_ptr_size(peekaboo_trace_t *trace)
 {
 	return trace->internal->ptr_size;
 }
+
+// size_t get_offsetregfile_size(peekaboo_trace_t *trace)
+// {
+// 	return trace->internal->offset_regfile_size;
+// }
 
 size_t get_regfile_size(peekaboo_trace_t *trace)
 {
@@ -326,6 +333,7 @@ void load_trace(char *dir_path, peekaboo_trace_t *trace_ptr)
 
 	switch (meta.arch)
 	{
+		// change this
 		case ARCH_AMD64:
 			trace_ptr->internal->ptr_size = 8;
 			trace_ptr->internal->regfile_size = sizeof(regfile_amd64_t);
@@ -366,7 +374,11 @@ void load_trace(char *dir_path, peekaboo_trace_t *trace_ptr)
 	snprintf(path, MAX_PATH, "%s/%s", dir_path, "memrefs");
 	trace_ptr->memrefs = fopen(path, "rb");
 	if (trace_ptr->memrefs == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
-
+	snprintf(path, MAX_PATH, "%s/%s", dir_path, "offset_regfile");
+	trace_ptr->offset_regfile = fopen(path, "rb");
+	if (trace_ptr->offset_regfile == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
+	
+	// trace_ptr->internal->offset_regfile_size = sizeof(offset_regfile_t);
 	// Init for internal structure
 	size_t trace_size = 0;
 	size_t ptr_size = trace_ptr->internal->ptr_size;
@@ -392,6 +404,7 @@ void free_peekaboo_trace(peekaboo_trace_t *trace_ptr)
 	fclose(trace_ptr->regfile);
 	fclose(trace_ptr->memfile);
 	fclose(trace_ptr->memrefs);
+	fclose(trace_ptr->offset_regfile);
 	if (trace_ptr->memrefs_offsets)	fclose(trace_ptr->memrefs_offsets);
 	free(trace_ptr->internal->bytes_map_buf);
 	free(trace_ptr->internal);
@@ -427,8 +440,8 @@ peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace)
 {
 	// insn is the peekaboo instruction record
 	peekaboo_insn_t *insn = malloc(sizeof(peekaboo_insn_t));
+	// bzero(insn,sizeof(peekaboo_insn_t));
 	size_t regfile_size = get_regfile_size(trace);
-	insn->regfile = malloc(regfile_size);
 	insn->arch = trace->internal->arch;
 
 	
@@ -447,6 +460,7 @@ peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace)
 	int fseek_return = fseek(trace->memrefs_offsets, (id-1) * sizeof(size_t), SEEK_SET);
 	size_t memfile_offset;
 	size_t fread_bytes = fread(&memfile_offset, sizeof(size_t), 1, trace->memrefs_offsets);
+	
 	errno = 0;
 	if (memfile_offset != (size_t) -1)
 	{
@@ -455,16 +469,58 @@ peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace)
 		for (uint32_t idx = 0; idx<insn->num_mem; idx++)
 		{
 			fread_bytes = fread(&insn->mem[idx], memfile_size, 1, trace->memfile);
-
 			// Trace memory broken checker
         	if (!(insn->mem[idx].status==0 || insn->mem[idx].status==1)) 
             	PEEKABOO_DIE("Abort! Broken memrefs_offsets. Remove memrefs_offsets in trace folder and try again.\n");
 		}
 	}
 
-	// read the regfile...
-	fseek(trace->regfile, (id-1) * regfile_size, SEEK_SET);
-	fread_bytes = fread(insn->regfile, regfile_size, 1, trace->regfile);
+	
+	size_t offset_regfile_size = sizeof(offset_regfile_t);
+	uint32_t offset_x;
+	uint32_t offset_y;
+	uint64_t reg_rip;
+
+	offset_regfile_t offset_rg;
+	// offset id
+	fseek(trace->offset_regfile, (id-1) * offset_regfile_size, SEEK_SET);
+	fread(&offset_rg, sizeof(offset_regfile_t), 1, trace->offset_regfile);
+
+	// size
+	fseek(trace->offset_regfile, (id-1) * offset_regfile_size + sizeof(uint32_t), SEEK_SET);
+	fread(&offset_y, 8, 1, trace->offset_regfile);
+
+	// rip
+	fseek(trace->offset_regfile, (id-1) * offset_regfile_size + (sizeof(uint32_t)*2), SEEK_SET);
+	fread(&reg_rip, 8, 1, trace->offset_regfile);
+
+		for(int j=1; j <= offset_rg.num_register_change ; j++){
+			uint64_t buf_register;
+			fseek(trace->regfile, (offset_rg.offset_idx) * sizeof(cur_register_t) + j * sizeof(cur_register_t), SEEK_SET);
+			fread(&insn->regfile, (offset_rg.num_register_change)  * sizeof(cur_register_t) , 1, trace->regfile);
+	
+				switch (insn->arch)
+				{
+					case ARCH_AMD64:
+						amd64_pass_reg(&insn->regfile, 1, reg_rip, &buf_current_register);
+						memcpy(insn->reg_gpr, buf_current_register, sizeof(uint64_t)*18);
+						break;
+					case ARCH_AARCH64:
+						PEEKABOO_DIE("libpeekaboo: Unsupported Architecture!\n");
+						break;
+					case ARCH_X86:
+						PEEKABOO_DIE("libpeekaboo: Unsupported Architecture!\n");
+						break;
+					default:
+						PEEKABOO_DIE("libpeekaboo: Unsupported Architecture!\n");
+						break;
+				}
+		
+
+	}
+
+
+	
 
 	// done! return
 	return insn;
@@ -475,13 +531,13 @@ void regfile_pp(peekaboo_insn_t *insn)
 	switch (insn->arch)
 	{
 		case ARCH_AMD64:
-			amd64_regfile_pp(insn->regfile);
+			amd64_regfile_pp(insn->reg_gpr);
 			break;
 		case ARCH_AARCH64:
-			aarch64_regfile_pp(insn->regfile);
+			aarch64_regfile_pp(insn->reg_gpr);
 			break;
 		case ARCH_X86:
-			x86_regfile_pp(insn->regfile);
+			x86_regfile_pp(insn->reg_gpr);
 			break;
 		default:
 			PEEKABOO_DIE("libpeekaboo: Unsupported Architecture!\n");
@@ -495,12 +551,6 @@ void free_peekaboo_insn(peekaboo_insn_t *insn_ptr)
 {
 	if (insn_ptr != NULL)
 	{
-		if (insn_ptr->regfile != NULL)
-		{
-			free(insn_ptr->regfile);
-			insn_ptr->regfile = NULL;
-		}
-		free(insn_ptr);
 		insn_ptr = NULL;
 	}
 }

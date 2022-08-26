@@ -69,12 +69,23 @@ typedef struct {
 } memref_t;
 
 typedef struct {
+	uint32_t offset_idx;
+	uint32_t num_register_change;
+	uint64_t reg_rip;
+} offset_regfile_t;
+
+typedef struct {
 	uint64_t addr;		/* memory address */
 	uint64_t value;		/* memory value */
 	uint32_t size;		/* how many bits are vaild in value */
 	uint32_t status; 	/* 0 for Read, 1 for write */
 	uint64_t pc;		/* Ad-hoc fix for alignment to support legacy version traces.*/
 } memfile_t;
+
+typedef struct {
+	uint64_t reg_value;
+	uint64_t reg_id;
+}cur_register_t;
 //---------------------------------------------------------
 
 
@@ -86,8 +97,16 @@ typedef struct {
 	size_t num_mem;
 	memfile_t mem[8];
 	uint32_t arch;
-	void *regfile;
+	#ifdef X86
+		#ifdef X64
+			typedef amd64_cur_regfile_t cur_register_t;
+		#endif
+	#endif
+	cur_register_t *regfile;
+	uint64_t reg_gpr[18];
 } peekaboo_insn_t;
+
+uint64_t *buf_current_register[18];
 
 typedef struct {
 	uint32_t arch;
@@ -111,6 +130,7 @@ typedef struct {
 	FILE *insn_trace;
 	FILE *bytes_map;
 	FILE *regfile;
+	FILE *offset_regfile;
 	FILE *memrefs;
 	FILE *memfile;
 	FILE *metafile;

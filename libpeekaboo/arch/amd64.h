@@ -20,6 +20,7 @@
 #ifndef __LIBPEEKABOO_AMD64_H__
 #define __LIBPEEKABOO_AMD64_H__
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -35,8 +36,40 @@ typedef struct storage_option_amd64{
 
 #define AMD64_NUM_SIMD_SLOTS 16
 
+enum REGISTER_GPR{
+	peekaboo_rdi,
+	peekaboo_rsi,
+	peekaboo_rsp,
+	peekaboo_rbp,
+	peekaboo_rbx,
+	peekaboo_rdx,
+	peekaboo_rcx,
+	peekaboo_rax,
+	peekaboo_r8,
+	peekaboo_r9,
+	peekaboo_r10,
+	peekaboo_r11,
+	peekaboo_r12,
+	peekaboo_r13,
+	peekaboo_r14,
+	peekaboo_r15,
+	peekaboo_rflags
+};
 
 /* Regfile */
+
+
+typedef struct {
+	uint64_t value_chg;
+	uint64_t register_number;
+}amd64_regchange_size_t;
+
+
+typedef struct {
+	uint64_t value_chg;
+	enum REGISTER_GPR register_number;
+} amd64_cpu_gr_t;
+
 typedef struct {
 	uint64_t reg_rdi;
 	uint64_t reg_rsi;
@@ -56,7 +89,12 @@ typedef struct {
 	uint64_t reg_r15;
 	uint64_t reg_rflags;
 	uint64_t reg_rip;
-} amd64_cpu_gr_t;
+} amd64_cur_cpu_gpr_t;
+
+typedef struct {
+	uint64_t reg_value;
+	uint64_t reg_id;
+}amd64_cur_regfile_t;
 
 typedef struct {
 	uint64_t reg_cs;
@@ -118,7 +156,9 @@ typedef struct {
 	uint8_t padding[96]; // 416 Bytes are used. The total area should be 512 bytes.
 } __attribute__((packed)) fxsave_area_t;
 
+
 typedef struct regfile_amd64{
+	
 	amd64_cpu_gr_t gpr;
 #ifdef _STORE_SIMD
 	amd64_cpu_simd_t simd;
@@ -128,7 +168,8 @@ typedef struct regfile_amd64{
 #endif
 } regfile_amd64_t;
 
-void amd64_regfile_pp(regfile_amd64_t *regfile);
+void amd64_regfile_pp(uint64_t *regfile);
+void amd64_pass_reg(amd64_cur_regfile_t *cur_regfile,uint32_t offset_y, uint64_t reg_rip, uint64_t *current_register);
 /* End of Regfile */
 
 #endif

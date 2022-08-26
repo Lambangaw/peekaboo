@@ -48,7 +48,7 @@
 bool print_memory   = false;
 bool print_register = false;
 uint32_t print_next = 0;
-
+uint64_t temp_register[16];
 // Structure
 typedef struct _insn_rawbyte_node_t {
     bool is_arbitrary;
@@ -357,18 +357,19 @@ void print_peekaboo_insn(peekaboo_insn_t *insn,
         // Yes, syscall. Print it!
         size_t trace_length = get_num_insn(peekaboo_trace_ptr);
         size_t next_insn_idx = insn_idx + 1;
-        const regfile_amd64_t *regfile_ptr = (regfile_amd64_t *) insn->regfile;
+        // const uint64_t *regfile_ptr = &insn->reg_gpr;
         uint64_t rvalue;
         if (next_insn_idx > trace_length)
             rvalue = 0;
         else
         {
             peekaboo_insn_t *next_insn = get_peekaboo_insn(next_insn_idx, peekaboo_trace_ptr);
-            regfile_ptr = (regfile_amd64_t *) next_insn->regfile;
-            rvalue = regfile_ptr->gpr.reg_rax;
+            // regfile_ptr = (regfile_amd64_t *) next_insn->regfile;
+            rvalue = next_insn->reg_gpr[7]; // this should be rax
+            
             free_peekaboo_insn(next_insn);
         }
-        if (0!=amd64_syscall_pp(insn->regfile, rvalue, print_syscall_info))
+        if (0!=amd64_syscall_pp(insn->reg_gpr, rvalue, print_syscall_info))
         {
             // Syscall analysis failed.
             printf("Syscall analysis failed");
@@ -388,6 +389,7 @@ void print_peekaboo_insn(peekaboo_insn_t *insn,
     #ifdef ASM_CAPSTONE
     {
         cs_insn *capstone_insn;
+        // printf("insn->rawbytes %d , insn->size %d, insn->addr %d\n",insn->rawbytes, insn->size, insn->addr);
         size_t count = cs_disasm(capstone_handler, insn->rawbytes, insn->size, insn->addr, 0, &capstone_insn);
         if (count == 0)
         {
