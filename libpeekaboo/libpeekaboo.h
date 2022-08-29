@@ -97,11 +97,11 @@ typedef struct {
 	size_t num_mem;
 	memfile_t mem[8];
 	uint32_t arch;
-	#ifdef X86
-		#ifdef X64
-			typedef amd64_cur_regfile_t cur_register_t;
-		#endif
-	#endif
+	// #ifdef X86
+	// 	#ifdef X64
+	// 		typedef amd64_cur_regfile_t cur_register_t;
+	// 	#endif
+	// #endif
 	cur_register_t *regfile;
 	uint64_t reg_gpr[18];
 } peekaboo_insn_t;
@@ -135,6 +135,12 @@ typedef struct {
 	FILE *memfile;
 	FILE *metafile;
 	FILE *memrefs_offsets;
+	#ifdef _STORE_SIMD
+	FILE *simd_regfile;
+	#endif
+	#ifdef _STORE_FXSAVE
+	FILE *fxsave_regfile;
+	#endif
 	peekaboo_internal_t *internal;
 } peekaboo_trace_t;
 // end

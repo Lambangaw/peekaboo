@@ -361,7 +361,6 @@ static const struct_syscall_info syscall_infos[] =
 
 int amd64_syscall_pp(uint64_t *regfile, uint64_t rvalue, bool print_details)
 {
-    printf("regfile %d rvalue %d\n",regfile[7],rvalue);
 	const uint64_t syscall_id = regfile[7];
 	if (syscall_id >= sizeof(syscall_infos)/sizeof(struct_syscall_info))
 	{

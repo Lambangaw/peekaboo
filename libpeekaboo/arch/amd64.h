@@ -160,13 +160,18 @@ typedef struct {
 typedef struct regfile_amd64{
 	
 	amd64_cpu_gr_t gpr;
+} regfile_amd64_t;
+
 #ifdef _STORE_SIMD
+typedef struct _regfile_simd_t{
 	amd64_cpu_simd_t simd;
+}regfile_simd_amd64_t;
 #endif
 #ifdef _STORE_FXSAVE
+typedef struct _regfile_fxsave_t{
 	fxsave_area_t fxsave;
+}regfile_fxsave_amd64_t;
 #endif
-} regfile_amd64_t;
 
 void amd64_regfile_pp(uint64_t *regfile);
 void amd64_pass_reg(amd64_cur_regfile_t *cur_regfile,uint32_t offset_y, uint64_t reg_rip, uint64_t *current_register);
