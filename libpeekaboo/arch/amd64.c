@@ -83,22 +83,22 @@ void amd64_pass_reg(amd64_cur_regfile_t *cur_regfile,uint32_t offset_y, uint64_t
 				current_register[10] = cur_regfile->reg_value;
 				break;
 			case peekaboo_r11:
-				current_register[12] = cur_regfile->reg_value;
+				current_register[11] = cur_regfile->reg_value;
 				break;
 			case peekaboo_r12:
-				current_register[13] = cur_regfile->reg_value;
+				current_register[12] = cur_regfile->reg_value;
 				break;
 			case peekaboo_r13:
-				current_register[14] = cur_regfile->reg_value;
+				current_register[13] = cur_regfile->reg_value;
 				break;
 			case peekaboo_r14:
-				current_register[15] = cur_regfile->reg_value;
+				current_register[14] = cur_regfile->reg_value;
 				break;
 			case peekaboo_r15:
-				current_register[16] = cur_regfile->reg_value;
+				current_register[15] = cur_regfile->reg_value;
 				break;
 			case peekaboo_rflags:
-				current_register[17] = cur_regfile->reg_value;
+				current_register[16] = cur_regfile->reg_value;
 				break;
 	}
 }

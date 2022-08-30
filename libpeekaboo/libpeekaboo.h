@@ -97,16 +97,12 @@ typedef struct {
 	size_t num_mem;
 	memfile_t mem[8];
 	uint32_t arch;
-	// #ifdef X86
-	// 	#ifdef X64
-	// 		typedef amd64_cur_regfile_t cur_register_t;
-	// 	#endif
-	// #endif
 	cur_register_t *regfile;
 	uint64_t reg_gpr[18];
 } peekaboo_insn_t;
 
 uint64_t *buf_current_register[18];
+bool *buf_backtracking_reg[18];
 
 typedef struct {
 	uint32_t arch;
@@ -153,7 +149,7 @@ void close_trace(peekaboo_trace_t *trace);
 /*** Trace Reader Utility ***/
 void load_trace(char *, peekaboo_trace_t *trace);
 void free_peekaboo_trace(peekaboo_trace_t *trace_ptr); // Must be called to free trace pointer loaded by load_trace
-peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace);
+peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace,bool start);
 void free_peekaboo_insn(peekaboo_insn_t *insn_ptr); // Must be called to free instruction pointed returned by get_peekaboo_insn
 uint64_t get_addr(size_t id, peekaboo_trace_t *trace);
 size_t get_num_insn(peekaboo_trace_t *);

@@ -363,7 +363,7 @@ void print_peekaboo_insn(peekaboo_insn_t *insn,
             rvalue = 0;
         else
         {
-            peekaboo_insn_t *next_insn = get_peekaboo_insn(next_insn_idx, peekaboo_trace_ptr);
+            peekaboo_insn_t *next_insn = get_peekaboo_insn(next_insn_idx, peekaboo_trace_ptr,0);
             // regfile_ptr = (regfile_amd64_t *) next_insn->regfile;
             rvalue = next_insn->reg_gpr[7]; // this should be rax
             
@@ -436,13 +436,18 @@ uint64_t print_back(const int64_t unprinted_size,
     {
         for (size_t prev_idx = ((int64_t)insn_idx - 5 > 0) ? (insn_idx - 5) : 1; prev_idx <= insn_idx; prev_idx++)
         {
-            peekaboo_insn_t *prev_insn = get_peekaboo_insn(prev_idx, peekaboo_trace_ptr);
+            peekaboo_insn_t *prev_insn;
+            if(prev_idx == (insn_idx-5)) {
+                prev_insn = get_peekaboo_insn(prev_idx, peekaboo_trace_ptr,1);
+            }else{
+                prev_insn = get_peekaboo_insn(prev_idx, peekaboo_trace_ptr,0);
+            }
             print_peekaboo_insn(prev_insn, peekaboo_trace_ptr, prev_idx, false, false);
             free_peekaboo_insn(prev_insn);
         }
         return (insn_idx+1);
     }
-    peekaboo_insn_t *insn = get_peekaboo_insn(insn_idx, peekaboo_trace_ptr);
+    peekaboo_insn_t *insn = get_peekaboo_insn(insn_idx, peekaboo_trace_ptr,0);
     uint64_t rvalue = print_back(unprinted_size - insn->size, peekaboo_trace_ptr, insn_idx - 1);
     print_peekaboo_insn(insn, peekaboo_trace_ptr, insn_idx, true, false);
     free_peekaboo_insn(insn);
@@ -690,6 +695,7 @@ int main(int argc, char *argv[])
     bool target_addr_size_hex = false;      // Does user type-in buffer size in hex? For memory access search mode
     char *comma_pos, *size_ptr;             // Temp pointers for arg parsing. For memory access search mode
     uint64_t printed_instr_num = 0;         // Counter for how many instr have been printed for non-pattern-search modes
+    memset(&buf_backtracking_reg,18,0);
 
     // Argument parsing
     int opt;
@@ -804,8 +810,14 @@ int main(int argc, char *argv[])
     for (size_t insn_idx=_loop_starts; insn_idx<=_loop_ends; insn_idx++)
     {
         // Get instruction ptr by instruction index
-        peekaboo_insn_t *insn = get_peekaboo_insn(insn_idx, peekaboo_trace_ptr);
-        
+        peekaboo_insn_t *insn;
+        if(insn_idx == _loop_starts){
+        insn = get_peekaboo_insn(insn_idx, peekaboo_trace_ptr,1);
+        }
+        else{
+
+        insn = get_peekaboo_insn(insn_idx, peekaboo_trace_ptr,0);
+        }
         // strace mode
         if (print_syscall_only)
         {
