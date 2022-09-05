@@ -49,9 +49,9 @@ if [ -d $dynamorio_path ]; then
             exit 1
         fi
     fi
-    echo -e "#!/bin/bash\n$drrun_path -c $script_dir/peekaboo_dr/build/libpeekaboo_dr.so -- \$@" > $script_dir/peekaboo.sh
+    echo -e "#!/bin/bash\n$drrun_path -c $script_dir/peekaboo_dr/build/libpeekaboo_dr.so \$2 \$3 -- \$1" > $script_dir/peekaboo.sh
     chmod 777 $script_dir/peekaboo.sh
-    echo "$0: Done. Run \"peekaboo.sh <application>\" to start tracing."
+    printf "$0: Done. Run \"peekaboo.sh <application> <option>\" to start tracing.\nOptions: \n --noreginfo for not tracing register information \n --nomeminfo for not tracing memory information\n"
 else # Unable to find DynamoRIO
     echo "Cannot open dynamorio directory $1."
 fi

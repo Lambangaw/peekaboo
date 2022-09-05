@@ -52,6 +52,8 @@ typedef struct {
 	uint32_t arch;
 	uint32_t version;
 	storage_options_t storage_options;
+	uint32_t no_reginfo;
+	uint32_t no_meminfo;
 } metadata_hdr_t;
 
 typedef struct insn_ref {
@@ -143,7 +145,7 @@ typedef struct {
 
 /*** Tracer Utility ***/
 peekaboo_trace_t *create_trace(char *name);
-void write_metadata(peekaboo_trace_t *, enum ARCH, uint32_t version);
+void write_metadata(peekaboo_trace_t *, enum ARCH, uint32_t version,uint32_t no_reginfo, uint32_t no_meminfo);
 void close_trace(peekaboo_trace_t *trace);
 
 /*** Trace Reader Utility ***/

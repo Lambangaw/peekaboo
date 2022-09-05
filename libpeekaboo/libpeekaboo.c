@@ -440,12 +440,16 @@ void free_peekaboo_trace(peekaboo_trace_t *trace_ptr)
 	fclose(trace_ptr->memfile);
 	fclose(trace_ptr->memrefs);
 	#ifdef _STORE_SIMD
+	{
 	if(trace_ptr->internal->storage_options.amd64.has_simd)
 	fclose(trace_ptr->simd_regfile);
+	}
 	#endif
 	#ifdef _STORE_FXSAVE
+	{
 	if(trace_ptr->internal->storage_options.amd64.has_fxsave)
 	fclose(trace_ptr->fxsave_regfile);
+	}
 	#endif
 
 	if (trace_ptr->memrefs_offsets)	fclose(trace_ptr->memrefs_offsets);
@@ -454,11 +458,13 @@ void free_peekaboo_trace(peekaboo_trace_t *trace_ptr)
 	free(trace_ptr);
 }
 
-void write_metadata(peekaboo_trace_t *trace_ptr, enum ARCH arch, uint32_t version)
+void write_metadata(peekaboo_trace_t *trace_ptr, enum ARCH arch, uint32_t version, uint32_t no_reginfo, uint32_t no_meminfo)
 {
 	metadata_hdr_t metadata;
 	metadata.arch = arch;
 	metadata.version = version;
+	metadata.no_reginfo = no_reginfo;
+	metadata.no_meminfo = no_meminfo;
 	if (arch == ARCH_AMD64)
 	{
 		#ifdef _STORE_SIMD
@@ -527,7 +533,6 @@ void backtrace_register(size_t id, peekaboo_insn_t *insn,peekaboo_trace_t *trace
 // It is caller's duty to free peekaboo insn ptr. Call free_peekaboo_insn() to do so.
 peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace,bool start)
 {
-	// printf("id %d\n",id);
 	// insn is the peekaboo instruction record
 	peekaboo_insn_t *insn = malloc(sizeof(peekaboo_insn_t));
 	// bzero(insn,sizeof(peekaboo_insn_t));
