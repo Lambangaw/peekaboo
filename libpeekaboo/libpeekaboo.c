@@ -488,6 +488,8 @@ void backtrace_register(size_t id, peekaboo_insn_t *insn,peekaboo_trace_t *trace
 	uint32_t offset_x;
 	uint32_t offset_y;
 	uint64_t reg_rip;
+	uint64_t reg_value;
+	uint64_t reg_id;
 	cur_register_t *cur_register_ptr;
 	cur_register_ptr = (cur_register_t *)malloc(sizeof(cur_register_t));
 	offset_regfile_t *offset_rg;
@@ -504,14 +506,17 @@ void backtrace_register(size_t id, peekaboo_insn_t *insn,peekaboo_trace_t *trace
 	uint32_t buf_off = offset_y;
 		for(int j=0; j < buf_off ; j++){
 			// printf("off %d idx %d\n",(uint32_t)offset_x,(offset_x) * sizeof(cur_register_t) + j * sizeof(cur_register_t));
-			fseek(trace->regfile, (offset_x) * sizeof(cur_register_t) + j * sizeof(cur_register_t), SEEK_SET);
-			fread(&(*cur_register_ptr), (offset_y)  * sizeof(cur_register_t) , 1, trace->regfile);
-			// printf("reg id %d rvalue %d\n",cur_register_ptr->reg_id,cur_register_ptr->reg_value);
-			if(buf_backtracking_reg[cur_register_ptr->reg_id] == false)
+			fseek(trace->regfile, (offset_x) * sizeof(cur_register_t) + j * (sizeof(cur_register_t) ), SEEK_SET);
+			fread(&(reg_value), sizeof(cur_register_t) , 1, trace->regfile);
+
+			fseek(trace->regfile, (offset_x) * sizeof(cur_register_t) + j * (sizeof(cur_register_t) ) + (sizeof(uint64_t) ), SEEK_SET);
+			fread(&(reg_id), sizeof(cur_register_t) , 1, trace->regfile);
+			// printf("reg id %"PRIx64" rvalue %p\n",reg_id,reg_value);
+			if(buf_backtracking_reg[reg_id] == false)
 			{
-				amd64_pass_reg(cur_register_ptr, 1, reg_rip, &buf_current_register);
+				amd64_pass_reg(reg_value,reg_id, 1, reg_rip, &buf_current_register);
 				// memcpy(insn->reg_gpr, &buf_current_register, sizeof(uint64_t)*18);
-				buf_backtracking_reg[cur_register_ptr->reg_id] = true;
+				buf_backtracking_reg[reg_id] = true;
 			}
 			// free(offset_rg);
 				// }
@@ -533,6 +538,7 @@ void backtrace_register(size_t id, peekaboo_insn_t *insn,peekaboo_trace_t *trace
 // It is caller's duty to free peekaboo insn ptr. Call free_peekaboo_insn() to do so.
 peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace,bool start)
 {
+	// printf("id %d\n",id);
 	// insn is the peekaboo instruction record
 	peekaboo_insn_t *insn = malloc(sizeof(peekaboo_insn_t));
 	// bzero(insn,sizeof(peekaboo_insn_t));
@@ -588,7 +594,8 @@ peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace,bool
 					uint32_t offset_x;
 					uint32_t offset_y;
 					uint64_t reg_rip;
-
+					uint64_t reg_value;
+					uint64_t *reg_id;
 					offset_regfile_t *offset_rg;
 					offset_rg = (offset_regfile_t *)malloc(sizeof(offset_regfile_t));
 					// offset id
@@ -605,8 +612,10 @@ peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace,bool
 			
 							fseek(trace->regfile, (offset_rg->offset_idx) * sizeof(cur_register_t) + j * sizeof(cur_register_t), SEEK_SET);
 							fread(&insn->regfile, (offset_rg->num_register_change)  * sizeof(cur_register_t) , 1, trace->regfile);
-					
-							amd64_pass_reg(&insn->regfile, 1, reg_rip, &buf_current_register);
+							reg_id = (uint64_t) (&insn->regfile) + sizeof(uint64_t);
+							// memcpy(&reg_id,&insn->regfile->reg_id,sizeof(uint64_t));
+							// printf("reg id %"PRIx64"\n",*reg_id);
+							amd64_pass_reg((uint64_t)&insn->regfile->reg_value, (uint64_t)*reg_id, 1, reg_rip, &buf_current_register);
 							memcpy(insn->reg_gpr, buf_current_register, sizeof(uint64_t)*18);
 										
 						}

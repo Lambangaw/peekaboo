@@ -17,7 +17,6 @@
 #include "amd64_syscall.h"
 
 
-static const uint64_t args_offset[6];
 
 static const struct_syscall_info syscall_infos[] = 
 {
@@ -361,6 +360,15 @@ static const struct_syscall_info syscall_infos[] =
 
 int amd64_syscall_pp(uint64_t *regfile, uint64_t rvalue, bool print_details)
 {
+    uint64_t args_offset[] =
+    {
+        [0] = regfile[0],
+        [1] = regfile[1],
+        [2] = regfile[5],
+        [3] = regfile[6],
+        [4] = regfile[8],
+        [5] = regfile[9],
+    };
 	const uint64_t syscall_id = regfile[7];
 	if (syscall_id >= sizeof(syscall_infos)/sizeof(struct_syscall_info))
 	{
@@ -384,7 +392,7 @@ int amd64_syscall_pp(uint64_t *regfile, uint64_t rvalue, bool print_details)
 	for (arg_idx = 0; arg_idx < syscall_info->nargs; arg_idx++)
 	{
 		if (arg_idx != 0) printf(", ");
-		printf("0x%lx", regfile[arg_idx]);
+		printf("0x%lx", args_offset[arg_idx]);
 	}
 	printf(") = 0x%lx", rvalue);
 	return 0;

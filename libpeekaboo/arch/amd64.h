@@ -174,7 +174,7 @@ typedef struct _regfile_fxsave_t{
 #endif
 
 void amd64_regfile_pp(uint64_t *regfile);
-void amd64_pass_reg(amd64_cur_regfile_t *cur_regfile,uint32_t offset_y, uint64_t reg_rip, uint64_t *current_register);
+void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint64_t reg_rip, uint64_t *current_register);
 /* End of Regfile */
 
 #endif
