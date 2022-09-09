@@ -59,11 +59,9 @@ static uint32_t not_store_meminfo;
 #define MAX_NUM_OFFSET_REGFILE 8192
 #define OFFSET_REGFILE_SIZE (sizeof(offset_regfile_t) * MAX_NUM_OFFSET_REGFILE)
 
-#define MAX_NUM_SIMD_REGFILE 8192
-#define SIMD_REGFILE_SIZE (sizeof(regfile_simd_t) * MAX_NUM_SIMD_REGFILE)
+#define MAX_NUM_NONGPR_REGFILE 8192
+#define NONGPR_REGFILE_SIZE (sizeof(regfile_nongpr_t) * MAX_NUM_NONGPR_REGFILE)
 
-#define MAX_NUM_FXSAVE_REGFILE 8192
-#define FXSAVE_REGFILE_SIZE (sizeof(regfile_fxsave_t) * MAX_NUM_FXSAVE_REGFILE)
 
 
 typedef struct {
@@ -88,7 +86,7 @@ static drx_buf_t *regfile_buf;
 static drx_buf_t *memrefs_buf;
 static drx_buf_t *memfile_buf;
 static drx_buf_t *offset_regfile_buf;
-static drx_buf_t *simd_regfile_buf;
+static drx_buf_t *nongpr_regfile_buf;
 static drx_buf_t *fxsave_regfile_buf;
 
 
@@ -96,18 +94,9 @@ static drx_buf_t *fxsave_regfile_buf;
 	#ifdef X64
 		char *arch_str = "AMD64";
 
-		
-
-		// reg_linked_list_t *head = NULL;
-
 		enum ARCH arch = ARCH_AMD64;
 		typedef regfile_amd64_t regfile_t;
-		#ifdef _STORE_SIMD
-		typedef regfile_simd_amd64_t regfile_simd_t;
-		#endif
-		#ifdef _STORE_FXSAVE
-		typedef regfile_fxsave_amd64_t regfile_fxsave_t;
-		#endif
+		typedef regfile_nongpr_amd64_t regfile_nongpr_t;
 		const storage_option_amd64_t storage_option;
 
 		void save_offset_register(void *drcontext, offset_regfile_t *offset_regfile, regfile_t *regfile, dr_mcontext_t *mc)
@@ -286,18 +275,15 @@ static drx_buf_t *fxsave_regfile_buf;
 		}
 
 		
-		#ifdef _STORE_SIMD
-		void storing_simd(regfile_simd_t *regfile_simd, dr_mcontext_t *mc){
-			memcpy(&regfile_simd->simd, mc->ymm, sizeof(regfile_simd->simd.ymm0)*MCXT_NUM_SIMD_SLOTS);
-			
+		
+		void storing_nongpr(regfile_nongpr_t *regfile_nongpr, dr_mcontext_t *mc){
+			#if defined _STORE_SIMD 
+			memcpy(&regfile_nongpr->simd, mc->ymm, sizeof(regfile_nongpr->simd.ymm0)*MCXT_NUM_SIMD_SLOTS);
+			#endif
+			#ifdef _STORE_FXSAVE
+			proc_save_fpstate((byte *)&regfile_nongpr->fxsave);
+			#endif
 		}
-		#endif
-		#ifdef _STORE_FXSAVE
-		void storing_fxsave(regfile_fxsave_t *regfile_fxsave, dr_mcontext_t *mc){
-			proc_save_fpstate((byte *)&regfile_fxsave->fxsave);
-			
-		}
-		#endif
 
 	#else
 		char *arch_str = "X86";
@@ -381,24 +367,14 @@ static void flush_offset_regfile(void *drcontext, void *buf_base, size_t size)
 	
 }
 
-#ifdef _STORE_SIMD
-static void flush_simd_regfile(void *drcontext, void *buf_base, size_t size)
-{
-	per_thread_t *data = drmgr_get_tls_field(drcontext, tls_idx);
-	size_t count = size / sizeof(regfile_simd_t);
-	fwrite(buf_base, sizeof(regfile_simd_t), count, data->peek_trace->simd_regfile);
-}
-#endif
 
-#ifdef _STORE_FXSAVE
-static void flush_fxsave_regfile(void *drcontext, void *buf_base, size_t size)
+static void flush_nongpr_regfile(void *drcontext, void *buf_base, size_t size)
 {
 	per_thread_t *data = drmgr_get_tls_field(drcontext, tls_idx);
-	size_t count = size / sizeof(regfile_fxsave_t);
-	DR_ASSERT(size % sizeof(regfile_fxsave_t) == 0);
-	fwrite(buf_base, sizeof(regfile_fxsave_t), count, data->peek_trace->fxsave_regfile);
+	size_t count = size / sizeof(regfile_nongpr_t);
+	DR_ASSERT(size % sizeof(regfile_nongpr_t) == 0);
+	fwrite(buf_base, sizeof(regfile_nongpr_t), count, data->peek_trace->nongpr_regfile);
 }
-#endif
 /*
 
 static void flush_map(void *drcontext, void *buf_base, size_t size)
@@ -433,11 +409,8 @@ static dr_signal_action_t event_signal(void *drcontext, dr_siginfo_t *info)
 		if(!not_store_reginfo)
 		{
 			flush_offset_regfile(drcontext, offset_regfile_buf, OFFSET_REGFILE_SIZE);
-			#ifdef _STORE_SIMD
-			flush_simd_regfile(drcontext, simd_regfile_buf, SIMD_REGFILE_SIZE);
-			#endif
-			#ifdef _STORE_FXSAVE
-			flush_fxsave_regfile(drcontext, fxsave_regfile_buf, FXSAVE_REGFILE_SIZE);
+			#if defined _STORE_SIMD || defined _STORE_FXSAVE
+			flush_nongpr_regfile(drcontext, nongpr_regfile_buf, NONGPR_REGFILE_SIZE);
 			#endif
 		}
 
@@ -453,11 +426,8 @@ static dr_signal_action_t event_signal(void *drcontext, dr_siginfo_t *info)
 		{
 			fflush(data->peek_trace->regfile);
 			fflush(data->peek_trace->offset_regfile);
-			#ifdef _STORE_SIMD
-			fflush(data->peek_trace->simd_regfile);
-			#endif
-			#ifdef _STORE_FXSAVE
-			fflush(data->peek_trace->fxsave_regfile);
+			#if defined _STORE_SIMD || defined _STORE_FXSAVE
+			fflush(data->peek_trace->nongpr_regfile);
 			#endif
 		}
 		dr_mutex_unlock(mutex);
@@ -479,33 +449,18 @@ void save_register(void *drcontext, uint64_t reg_id, uint64_t value)
 	fwrite(regfile_ptr, sizeof(regfile_t), 1, data->peek_trace->regfile);
 }
 
-#ifdef _STORE_SIMD
-void save_simd_register()
+
+void save_nongpr_register()
 {
 	void *drcontext = dr_get_current_drcontext();
-	regfile_simd_t *regfile_simd_ptr;
-	regfile_simd_ptr = (regfile_simd_t *) drx_buf_get_buffer_ptr(drcontext, simd_regfile_buf);
-
-	
+	regfile_nongpr_t *regfile_nongpr_ptr;
+	regfile_nongpr_ptr = (regfile_nongpr_t *) drx_buf_get_buffer_ptr(drcontext, nongpr_regfile_buf);
 	dr_mcontext_t mc = {sizeof(mc), DR_MC_ALL};
 	dr_get_mcontext(drcontext, &mc);
-	storing_simd(regfile_simd_ptr, &mc);
+	storing_nongpr(regfile_nongpr_ptr,&mc);
 }
-#endif
 
-#ifdef _STORE_FXSAVE
-void save_fxsave_register()
-{
-	void *drcontext = dr_get_current_drcontext();
-	regfile_fxsave_t *regfile_fxsave_ptr;
-	regfile_fxsave_ptr = (regfile_fxsave_t *) drx_buf_get_buffer_ptr(drcontext, fxsave_regfile_buf);
-	dr_mcontext_t mc = {sizeof(mc), DR_MC_ALL};
-	dr_get_mcontext(drcontext, &mc);
-	storing_fxsave(regfile_fxsave_ptr,&mc);
-}
-#endif
-
-static void trace_register(app_pc pc)
+static void trace_offset_register(app_pc pc)
 {
 	
 	void *drcontext = dr_get_current_drcontext();
@@ -524,7 +479,7 @@ static void trace_register(app_pc pc)
 	
 }
 
-static void trace_register_2(app_pc pc)
+static void copy_regfile(app_pc pc)
 {
 	
 	void *drcontext = dr_get_current_drcontext();
@@ -611,7 +566,7 @@ static void instrument_insn(void *drcontext, instrlist_t *ilist, instr_t *where,
 			drx_buf_insert_load_buf_ptr(drcontext, offset_regfile_buf, ilist, where, reg_ptr);
 			// ZL: insert a write 0 into the stream using dynamorio sanctioned instruction to trigger the flushing of file from trace buffer.
 			drx_buf_insert_buf_store(drcontext, offset_regfile_buf, ilist, where, reg_ptr, reg_tmp, OPND_CREATE_INT32(0), OPSZ_4, 0);
-			dr_insert_clean_call(drcontext, ilist, where, (void *)trace_register, false, 1, OPND_CREATE_INT64(pc));
+			dr_insert_clean_call(drcontext, ilist, where, (void *)trace_offset_register, false, 1, OPND_CREATE_INT64(pc));
 			// raise(SIGINT);
 			#ifdef X86
 				#ifdef X64
@@ -623,27 +578,20 @@ static void instrument_insn(void *drcontext, instrlist_t *ilist, instr_t *where,
 			drx_buf_insert_update_buf_ptr(drcontext, offset_regfile_buf, ilist, where, reg_ptr, DR_REG_NULL, sizeof(offset_regfile_t));
 			drx_buf_insert_load_buf_ptr(drcontext, offset_regfile_buf, ilist, where, reg_ptr);
 
-		#ifdef _STORE_SIMD
-			// drx_buf_insert_load_buf_ptr(drcontext, simd_regfile_buf, ilist, where, reg_ptr);
-			// drx_buf_insert_buf_store(drcontext, simd_regfile_buf, ilist, where, reg_ptr, reg_tmp, OPND_CREATE_INT32(0), OPSZ_4, 0);	
-			// dr_insert_clean_call(drcontext, ilist, where, (void *)save_simd_register, false, 1, OPND_CREATE_INT64(pc));
-			// drx_buf_insert_update_buf_ptr(drcontext, simd_regfile_buf, ilist, where, reg_ptr, DR_REG_NULL, 16);
-			// drx_buf_insert_load_buf_ptr(drcontext, simd_regfile_buf, ilist, where, reg_ptr);
-		#endif
 
 			drx_buf_insert_load_buf_ptr(drcontext, regfile_buf, ilist, where, reg_ptr);
 			drx_buf_insert_buf_store(drcontext, regfile_buf, ilist, where, reg_ptr, reg_tmp, OPND_CREATE_INT32(0), OPSZ_4, 0);	
-			dr_insert_clean_call(drcontext, ilist, where, (void *)trace_register_2, false, 1, OPND_CREATE_INT64(pc));
+			dr_insert_clean_call(drcontext, ilist, where, (void *)copy_regfile, false, 1, OPND_CREATE_INT64(pc));
 			drx_buf_insert_update_buf_ptr(drcontext, regfile_buf, ilist, where, reg_ptr, DR_REG_NULL, sizeof(regfile_t));
 			drx_buf_insert_load_buf_ptr(drcontext, regfile_buf, ilist, where, reg_ptr);
 
 
-		#ifdef _STORE_FXSAVE
-			drx_buf_insert_load_buf_ptr(drcontext, fxsave_regfile_buf, ilist, where, reg_ptr);
-			drx_buf_insert_buf_store(drcontext, fxsave_regfile_buf, ilist, where, reg_ptr, reg_tmp, OPND_CREATE_INT32(0), OPSZ_4, 0);	
-			dr_insert_clean_call(drcontext, ilist, where, (void *)save_fxsave_register, false, 0);
-			drx_buf_insert_update_buf_ptr(drcontext, fxsave_regfile_buf, ilist, where, reg_ptr, DR_REG_NULL, sizeof(regfile_fxsave_t));
-			drx_buf_insert_load_buf_ptr(drcontext, fxsave_regfile_buf, ilist, where, reg_ptr);
+		#if defined _STORE_SIMD || defined _STORE_FXSAVE
+			drx_buf_insert_load_buf_ptr(drcontext, nongpr_regfile_buf, ilist, where, reg_ptr);
+			drx_buf_insert_buf_store(drcontext, nongpr_regfile_buf, ilist, where, reg_ptr, reg_tmp, OPND_CREATE_INT32(0), OPSZ_4, 0);	
+			dr_insert_clean_call(drcontext, ilist, where, (void *)save_nongpr_register, false, 0);
+			drx_buf_insert_update_buf_ptr(drcontext, nongpr_regfile_buf, ilist, where, reg_ptr, DR_REG_NULL, sizeof(regfile_nongpr_t));
+			drx_buf_insert_load_buf_ptr(drcontext, nongpr_regfile_buf, ilist, where, reg_ptr);
 		#endif
 	}
 
@@ -825,11 +773,8 @@ static void fork_init(void *drcontext)
 	{
 		drx_buf_free(regfile_buf);
 		drx_buf_free(offset_regfile_buf);
-		#ifdef _STORE_SIMD
-		drx_buf_free(simd_regfile_buf);
-		#endif
-		#ifdef _STORE_FXSAVE
-		drx_buf_free(fxsave_regfile_buf);
+		#if defined _STORE_SIMD || defined _STORE_FXSAVE
+		drx_buf_free(nongpr_regfile_buf);
 		#endif
 	}
 
@@ -843,11 +788,8 @@ static void fork_init(void *drcontext)
 	{
 		regfile_buf = drx_buf_create_trace_buffer(REG_BUF_SIZE, flush_regfile);
 		offset_regfile_buf = drx_buf_create_trace_buffer(OFFSET_REGFILE_SIZE,flush_offset_regfile);
-		#ifdef _STORE_SIMD
-		simd_regfile_buf = drx_buf_create_trace_buffer(SIMD_REGFILE_SIZE,flush_simd_regfile);
-		#endif
-		#ifdef _STORE_FXSAVE
-		fxsave_regfile_buf = drx_buf_create_trace_buffer(FXSAVE_REGFILE_SIZE,flush_fxsave_regfile);
+		#if defined _STORE_SIMD || defined _STORE_FXSAVE
+		nongpr_regfile_buf = drx_buf_create_trace_buffer(NONGPR_REGFILE_SIZE,flush_nongpr_regfile);
 		#endif
 	}
 
@@ -904,11 +846,8 @@ static void event_exit(void)
 	{
 		drx_buf_free(regfile_buf);
 		drx_buf_free(offset_regfile_buf);
-		#ifdef _STORE_SIMD
-		drx_buf_free(simd_regfile_buf);
-		#endif
-		#ifdef _STORE_FXSAVE
-		drx_buf_free(fxsave_regfile_buf);
+		#if defined _STORE_SIMD || defined _STORE_FXSAVE
+		drx_buf_free(nongpr_regfile_buf);
 		#endif
 	}
 
@@ -971,11 +910,8 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char *argv[])
 	if(!not_store_reginfo){
 		regfile_buf = drx_buf_create_trace_buffer(REG_BUF_SIZE, flush_regfile);
 		offset_regfile_buf = drx_buf_create_trace_buffer(OFFSET_REGFILE_SIZE, flush_offset_regfile);
-		#ifdef _STORE_SIMD
-		simd_regfile_buf = drx_buf_create_trace_buffer(SIMD_REGFILE_SIZE, flush_simd_regfile);
-		#endif
-		#ifdef _STORE_FXSAVE
-		fxsave_regfile_buf = drx_buf_create_trace_buffer(FXSAVE_REGFILE_SIZE, flush_fxsave_regfile);
+		#if defined _STORE_SIMD || defined _STORE_FXSAVE
+		nongpr_regfile_buf = drx_buf_create_trace_buffer(NONGPR_REGFILE_SIZE, flush_nongpr_regfile);
 		#endif
 	}
 	//dr_log(NULL, DR_LOG_ALL, 11, "%s - Client 'peekaboo' initializing\n", arch);

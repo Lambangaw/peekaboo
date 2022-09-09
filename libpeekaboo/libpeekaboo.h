@@ -133,11 +133,8 @@ typedef struct {
 	FILE *memfile;
 	FILE *metafile;
 	FILE *memrefs_offsets;
-	#ifdef _STORE_SIMD
-	FILE *simd_regfile;
-	#endif
-	#ifdef _STORE_FXSAVE
-	FILE *fxsave_regfile;
+	#if defined _STORE_SIMD || defined _STORE_FXSAVE 
+	FILE *nongpr_regfile;
 	#endif
 	peekaboo_internal_t *internal;
 } peekaboo_trace_t;

@@ -82,11 +82,8 @@ void close_trace(peekaboo_trace_t *trace_ptr)
 	fflush(trace_ptr->memfile);
 	fflush(trace_ptr->memrefs);
 	fflush(trace_ptr->offset_regfile);
-	#ifdef _STORE_SIMD
-	fflush(trace_ptr->simd_regfile);
-	#endif
-	#ifdef _STORE_FXSAVE
-	fflush(trace_ptr->fxsave_regfile);
+	#if defined _STORE_SIMD || defined _STORE_FXSAVE
+	fflush(trace_ptr->nongpr_regfile);
 	#endif
 	//fflush(trace_ptr->metafile);
 
@@ -96,11 +93,8 @@ void close_trace(peekaboo_trace_t *trace_ptr)
 	fclose(trace_ptr->memfile);
 	fclose(trace_ptr->memrefs);
 	fclose(trace_ptr->offset_regfile);
-	#ifdef _STORE_SIMD
-	fclose(trace_ptr->simd_regfile);
-	#endif
-	#ifdef _STORE_FXSAVE
-	fclose(trace_ptr->fxsave_regfile);
+	#if defined _STORE_SIMD || defined _STORE_FXSAVE
+	fclose(trace_ptr->nongpr_regfile);
 	#endif
 	//fclose(trace_ptr->metafile);
 }
@@ -124,11 +118,8 @@ peekaboo_trace_t *create_trace(char *name)
 	create_trace_file(dir_path, "memrefs", MAX_PATH, &trace_ptr->memrefs);
 	create_trace_file(dir_path, "metafile", MAX_PATH, &trace_ptr->metafile);
 	create_trace_file(dir_path, "offset_regfile", MAX_PATH, &trace_ptr->offset_regfile);
-	#ifdef _STORE_SIMD
-	create_trace_file(dir_path, "simd_regfile", MAX_PATH, &trace_ptr->simd_regfile);
-	#endif
-	#ifdef _STORE_FXSAVE
-	create_trace_file(dir_path, "fxsave_regfile", MAX_PATH, &trace_ptr->fxsave_regfile);
+	#if defined _STORE_SIMD || defined _STORE_FXSAVE
+	create_trace_file(dir_path, "nongpr_regfile", MAX_PATH, &trace_ptr->nongpr_regfile);
 	#endif
 	/* Since version 2, insn.bytemap is shared by all threads. So we do not create
 	 * here.
@@ -395,22 +386,13 @@ void load_trace(char *dir_path, peekaboo_trace_t *trace_ptr)
 	trace_ptr->offset_regfile = fopen(path, "rb");
 	if (trace_ptr->offset_regfile == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
 	
-	#ifdef _STORE_SIMD
-	if(trace_ptr->internal->storage_options.amd64.has_simd)
+	#if defined _STORE_SIMD || defined _STORE_FXSAVE
+	if(trace_ptr->internal->storage_options.amd64.has_simd || trace_ptr->internal->storage_options.amd64.has_fxsave)
 	{
 
-		snprintf(path, MAX_PATH, "%s/%s", dir_path, "simd_regfile");
-		trace_ptr->simd_regfile = fopen(path, "rb");
-		if (trace_ptr->simd_regfile == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
-	}
-	#endif
-	#ifdef _STORE_FXSAVE
-	if (trace_ptr->internal->storage_options.amd64.has_fxsave)
-	{
-
-		snprintf(path, MAX_PATH, "%s/%s", dir_path, "fxsave_regfile");
-		trace_ptr->fxsave_regfile = fopen(path, "rb");
-		if (trace_ptr->fxsave_regfile == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
+		snprintf(path, MAX_PATH, "%s/%s", dir_path, "nongpr_regfile");
+		trace_ptr->nongpr_regfile = fopen(path, "rb");
+		if (trace_ptr->nongpr_regfile == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
 	}
 	#endif
 	// trace_ptr->internal->offset_regfile_size = sizeof(offset_regfile_t);
@@ -439,16 +421,10 @@ void free_peekaboo_trace(peekaboo_trace_t *trace_ptr)
 	fclose(trace_ptr->regfile);
 	fclose(trace_ptr->memfile);
 	fclose(trace_ptr->memrefs);
-	#ifdef _STORE_SIMD
+	#if defined _STORE_SIMD || defined _STORE_FXSAVE
 	{
-	if(trace_ptr->internal->storage_options.amd64.has_simd)
-	fclose(trace_ptr->simd_regfile);
-	}
-	#endif
-	#ifdef _STORE_FXSAVE
-	{
-	if(trace_ptr->internal->storage_options.amd64.has_fxsave)
-	fclose(trace_ptr->fxsave_regfile);
+	if(trace_ptr->internal->storage_options.amd64.has_simd || trace_ptr->internal->storage_options.amd64.has_fxsave)
+	fclose(trace_ptr->nongpr_regfile);
 	}
 	#endif
 
