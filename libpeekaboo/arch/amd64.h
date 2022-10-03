@@ -39,8 +39,8 @@ typedef struct storage_option_amd64{
 enum REGISTER_GPR{
 	peekaboo_rdi,
 	peekaboo_rsi,
-	peekaboo_rsp,
 	peekaboo_rbp,
+	peekaboo_rsp,
 	peekaboo_rbx,
 	peekaboo_rdx,
 	peekaboo_rcx,
@@ -73,8 +73,8 @@ typedef struct {
 typedef struct {
 	uint64_t reg_rdi;
 	uint64_t reg_rsi;
-	uint64_t reg_rsp;
 	uint64_t reg_rbp;
+	uint64_t reg_rsp;
 	uint64_t reg_rbx;
 	uint64_t reg_rdx;
 	uint64_t reg_rcx;

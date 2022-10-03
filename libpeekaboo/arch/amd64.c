@@ -22,8 +22,8 @@ void amd64_regfile_pp(uint64_t *current_register)
 	printf("\tRegisters:\n");
 	char *gpr_string[] = {"rdi",
 	                     "rsi",
-	                     "rsp",
 	                     "rbp",
+	                     "rsp",
 	                     "rbx",
 	                     "rdx",
 	                     "rcx",
@@ -48,7 +48,6 @@ void amd64_regfile_pp(uint64_t *current_register)
 
 void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint64_t reg_rip, uint64_t *current_register){
 	current_register[17] = reg_rip;
-	// printf("reg id %"PRIx64" rvalue %p\n",reg_id,reg_value);
 		switch (reg_id){
 			case peekaboo_rdi:
 				current_register[0] = reg_value;
@@ -56,10 +55,10 @@ void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint6
 			case peekaboo_rsi:
 				current_register[1] = reg_value;
 				break;
-			case peekaboo_rsp:
+			case peekaboo_rbp:
 				current_register[2] = reg_value;
 				break;
-			case peekaboo_rbp:
+			case peekaboo_rsp:
 				current_register[3] = reg_value;
 				break;
 			case peekaboo_rbx:

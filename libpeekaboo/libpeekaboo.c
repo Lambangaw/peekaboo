@@ -481,21 +481,16 @@ void backtrace_register(size_t id, peekaboo_insn_t *insn,peekaboo_trace_t *trace
 	fread(&reg_rip, 8, 1, trace->offset_regfile);
 	uint32_t buf_off = offset_y;
 		for(int j=0; j < buf_off ; j++){
-			// printf("off %d idx %d\n",(uint32_t)offset_x,(offset_x) * sizeof(cur_register_t) + j * sizeof(cur_register_t));
 			fseek(trace->regfile, (offset_x) * sizeof(cur_register_t) + j * (sizeof(cur_register_t) ), SEEK_SET);
 			fread(&(reg_value), sizeof(cur_register_t) , 1, trace->regfile);
 
 			fseek(trace->regfile, (offset_x) * sizeof(cur_register_t) + j * (sizeof(cur_register_t) ) + (sizeof(uint64_t) ), SEEK_SET);
 			fread(&(reg_id), sizeof(cur_register_t) , 1, trace->regfile);
-			// printf("reg id %"PRIx64" rvalue %p\n",reg_id,reg_value);
 			if(buf_backtracking_reg[reg_id] == false)
 			{
 				amd64_pass_reg(reg_value,reg_id, 1, reg_rip, &buf_current_register);
-				// memcpy(insn->reg_gpr, &buf_current_register, sizeof(uint64_t)*18);
 				buf_backtracking_reg[reg_id] = true;
 			}
-			// free(offset_rg);
-				// }
 		}
 		free(cur_register_ptr);
 	
