@@ -5,7 +5,9 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * 
- *     https:tware
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -13,8 +15,6 @@
  */
 
 #include "amd64.h"
-#include <stdlib.h>
-#include <stdio.h>
 
 void amd64_regfile_pp(uint64_t *current_register)
 {
@@ -47,58 +47,114 @@ void amd64_regfile_pp(uint64_t *current_register)
 }
 
 void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint64_t reg_rip, uint64_t *current_register){
-	current_register[17] = reg_rip;
+	current_register[PEEKABOO_RIP] = reg_rip;
 		switch (reg_id){
-			case peekaboo_rdi:
-				current_register[0] = reg_value;
+			case PEEKABOO_RDI:
+				current_register[PEEKABOO_RDI] = reg_value;
 				break;
-			case peekaboo_rsi:
-				current_register[1] = reg_value;
+			case PEEKABOO_RSI:
+				current_register[PEEKABOO_RSI] = reg_value;
 				break;
-			case peekaboo_rbp:
-				current_register[2] = reg_value;
+			case PEEKABOO_RBP:
+				current_register[PEEKABOO_RBP] = reg_value;
 				break;
-			case peekaboo_rsp:
-				current_register[3] = reg_value;
+			case PEEKABOO_RSP:
+				current_register[PEEKABOO_RSP] = reg_value;
 				break;
-			case peekaboo_rbx:
-				current_register[4] = reg_value;
+			case PEEKABOO_RBX:
+				current_register[PEEKABOO_RBX] = reg_value;
 				break;
-			case peekaboo_rdx:
-				current_register[5] = reg_value;
+			case PEEKABOO_RDX:
+				current_register[PEEKABOO_RDX] = reg_value;
 				break;
-			case peekaboo_rcx:
-				current_register[6] = reg_value;
+			case PEEKABOO_RCX:
+				current_register[PEEKABOO_RCX] = reg_value;
 				break;
-			case peekaboo_rax:
-				current_register[7] = reg_value;
+			case PEEKABOO_RAX:
+				current_register[PEEKABOO_RAX] = reg_value;
 				break;
-			case peekaboo_r8:
-				current_register[8] = reg_value;
+			case PEEKABOO_R8:
+				current_register[PEEKABOO_R8] = reg_value;
 				break;
-			case peekaboo_r9:
-				current_register[9] = reg_value;
+			case PEEKABOO_R9:
+				current_register[PEEKABOO_R9] = reg_value;
 				break;
-			case peekaboo_r10:
-				current_register[10] = reg_value;
+			case PEEKABOO_R10:
+				current_register[PEEKABOO_R10] = reg_value;
 				break;
-			case peekaboo_r11:
-				current_register[11] = reg_value;
+			case PEEKABOO_R11:
+				current_register[PEEKABOO_R11] = reg_value;
 				break;
-			case peekaboo_r12:
-				current_register[12] = reg_value;
+			case PEEKABOO_R12:
+				current_register[PEEKABOO_R12] = reg_value;
 				break;
-			case peekaboo_r13:
-				current_register[13] = reg_value;
+			case PEEKABOO_R13:
+				current_register[PEEKABOO_R13] = reg_value;
 				break;
-			case peekaboo_r14:
-				current_register[14] = reg_value;
+			case PEEKABOO_R14:
+				current_register[PEEKABOO_R14] = reg_value;
 				break;
-			case peekaboo_r15:
-				current_register[15] = reg_value;
+			case PEEKABOO_R15:
+				current_register[PEEKABOO_R15] = reg_value;
 				break;
-			case peekaboo_rflags:
-				current_register[16] = reg_value;
+			case PEEKABOO_RFLAGS:
+				current_register[PEEKABOO_RFLAGS] = reg_value;
+				break;
+	}
+}
+
+void amd64_pass_reg_bt(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint64_t *current_register){
+		switch (reg_id){
+			case PEEKABOO_RDI:
+				current_register[PEEKABOO_RDI] = reg_value;
+				break;
+			case PEEKABOO_RSI:
+				current_register[PEEKABOO_RSI] = reg_value;
+				break;
+			case PEEKABOO_RBP:
+				current_register[PEEKABOO_RBP] = reg_value;
+				break;
+			case PEEKABOO_RSP:
+				current_register[PEEKABOO_RSP] = reg_value;
+				break;
+			case PEEKABOO_RBX:
+				current_register[PEEKABOO_RBX] = reg_value;
+				break;
+			case PEEKABOO_RDX:
+				current_register[PEEKABOO_RDX] = reg_value;
+				break;
+			case PEEKABOO_RCX:
+				current_register[PEEKABOO_RCX] = reg_value;
+				break;
+			case PEEKABOO_RAX:
+				current_register[PEEKABOO_RAX] = reg_value;
+				break;
+			case PEEKABOO_R8:
+				current_register[PEEKABOO_R8] = reg_value;
+				break;
+			case PEEKABOO_R9:
+				current_register[PEEKABOO_R9] = reg_value;
+				break;
+			case PEEKABOO_R10:
+				current_register[PEEKABOO_R10] = reg_value;
+				break;
+			case PEEKABOO_R11:
+				current_register[PEEKABOO_R11] = reg_value;
+				break;
+			case PEEKABOO_R12:
+				current_register[PEEKABOO_R12] = reg_value;
+				break;
+			case PEEKABOO_R13:
+				current_register[PEEKABOO_R13] = reg_value;
+				break;
+			case PEEKABOO_R14:
+				current_register[PEEKABOO_R14] = reg_value;
+				break;
+			case PEEKABOO_R15:
+				current_register[PEEKABOO_R15] = reg_value;
+				break;
+			case PEEKABOO_RFLAGS:
+				current_register[PEEKABOO_RFLAGS] = reg_value;
 				break;
 	}
 }

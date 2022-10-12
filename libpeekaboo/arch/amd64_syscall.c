@@ -362,14 +362,14 @@ int amd64_syscall_pp(uint64_t *regfile, uint64_t rvalue, bool print_details)
 {
     uint64_t args_offset[] =
     {
-        [0] = regfile[0],
-        [1] = regfile[1],
-        [2] = regfile[5],
-        [3] = regfile[6],
-        [4] = regfile[8],
-        [5] = regfile[9],
+        [0] = regfile[PEEKABOO_RDI],
+        [1] = regfile[PEEKABOO_RSI],
+        [2] = regfile[PEEKABOO_RDX],
+        [3] = regfile[PEEKABOO_RCX],
+        [4] = regfile[PEEKABOO_R8],
+        [5] = regfile[PEEKABOO_R9]
     };
-	const uint64_t syscall_id = regfile[7];
+	const uint64_t syscall_id = regfile[PEEKABOO_RAX];
 	if (syscall_id >= sizeof(syscall_infos)/sizeof(struct_syscall_info))
 	{
 		// Unrecognized syscall ID. Return.

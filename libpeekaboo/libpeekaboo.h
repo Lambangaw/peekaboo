@@ -98,8 +98,7 @@ typedef struct {
 	uint8_t rawbytes[16];
 	size_t num_mem;
 	memfile_t mem[8];
-	uint32_t arch;
-	cur_register_t *regfile;
+	uint32_t arch;;
 	uint64_t reg_gpr[18];
 } peekaboo_insn_t;
 
@@ -153,5 +152,6 @@ void free_peekaboo_insn(peekaboo_insn_t *insn_ptr); // Must be called to free in
 uint64_t get_addr(size_t id, peekaboo_trace_t *trace);
 size_t get_num_insn(peekaboo_trace_t *);
 void regfile_pp(peekaboo_insn_t *insn);
+void backtrace_register(size_t id, peekaboo_trace_t *trace);
 
 #endif

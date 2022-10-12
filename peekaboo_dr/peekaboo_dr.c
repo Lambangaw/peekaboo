@@ -119,12 +119,12 @@ static drx_buf_t *nongpr_regfile_buf;
 				if(data->reg_flags != mc->xflags){
 					data->reg_flags = mc->xflags;
 					save_register(drcontext,16,mc->xflags);
-					data->cur_reg_id[16] = 1;
+					data->cur_reg_id[PEEKABOO_RFLAGS] = 1;
 				}
 			}else{
 				data->reg_rsp = mc->rsp;
 				save_register(drcontext,3,mc->rsp);
-				data->cur_reg_id[3] = 1;
+				data->cur_reg_id[PEEKABOO_RSP] = 1;
 			}
 			data->num_reg_change = 0;
 			for(int i=0;i<17;i++){
@@ -348,7 +348,7 @@ static void copy_regfile(app_pc pc)
 	decode(drcontext, pc, instr);
 	memset(&data->ftr_reg_id,0,sizeof(data->ftr_reg_id));
 	if(instr_is_syscall(instr)){
-		data->ftr_reg_id[peekaboo_rax] = 1;
+		data->ftr_reg_id[PEEKABOO_RAX] = 1;
 	}
 	int num_dst = instr_num_dsts(instr);
 	for(int i=0;i<num_dst;i++)
@@ -360,79 +360,79 @@ static void copy_regfile(app_pc pc)
 				int simp_reg_id = reg_id % 16;
 				switch(simp_reg_id){
 					case 0:
-						data->ftr_reg_id[peekaboo_r15] = 1;
+						data->ftr_reg_id[PEEKABOO_R15] = 1;
 						break;
 					case 1:
-						data->ftr_reg_id[peekaboo_rax] = 1;
+						data->ftr_reg_id[PEEKABOO_RAX] = 1;
 						break;
 					case 2:
-						data->ftr_reg_id[peekaboo_rbp] = 1;
+						data->ftr_reg_id[PEEKABOO_RBP] = 1;
 						break;
 					case 3:
-						data->ftr_reg_id[peekaboo_rdx] = 1;
+						data->ftr_reg_id[PEEKABOO_RDX] = 1;
 						break;
 					case 4:
-						data->ftr_reg_id[peekaboo_rbx] = 1;
+						data->ftr_reg_id[PEEKABOO_RBX] = 1;
 						break;
 					case 5:
-						data->ftr_reg_id[peekaboo_rsp] = 1;
+						data->ftr_reg_id[PEEKABOO_RSP] = 1;
 						break;
 					case 6:
-						data->ftr_reg_id[peekaboo_rbp] = 1;
+						data->ftr_reg_id[PEEKABOO_RBP] = 1;
 						break;
 					case 7:
-						data->ftr_reg_id[peekaboo_rsi] = 1;
+						data->ftr_reg_id[PEEKABOO_RSI] = 1;
 						break;
 					case 8:
-						data->ftr_reg_id[peekaboo_rdi] = 1;
+						data->ftr_reg_id[PEEKABOO_RDI] = 1;
 						break;
 					case 9:
-						data->ftr_reg_id[peekaboo_r8] = 1;
+						data->ftr_reg_id[PEEKABOO_R8] = 1;
 						break;
 					case 10:
-						data->ftr_reg_id[peekaboo_r9] = 1;
+						data->ftr_reg_id[PEEKABOO_R9] = 1;
 						break;
 					case 11:
-						data->ftr_reg_id[peekaboo_r10] = 1;
+						data->ftr_reg_id[PEEKABOO_R10] = 1;
 						break;
 					case 12:
-						data->ftr_reg_id[peekaboo_r11] = 1;
+						data->ftr_reg_id[PEEKABOO_R11] = 1;
 						break;
 					case 13:
-						data->ftr_reg_id[peekaboo_r12] = 1;
+						data->ftr_reg_id[PEEKABOO_R12] = 1;
 						break;
 					case 14:
-						data->ftr_reg_id[peekaboo_r13] = 1;
+						data->ftr_reg_id[PEEKABOO_R13] = 1;
 						break;
 					case 15:
-						data->ftr_reg_id[peekaboo_r14] = 1;
+						data->ftr_reg_id[PEEKABOO_R14] = 1;
 						break;
 				}
 			}else{
 				switch(reg_id){
 					case 53:
-						data->ftr_reg_id[peekaboo_rax] = 1;
+						data->ftr_reg_id[PEEKABOO_RAX] = 1;
 						break;
 					case 54:
-						data->ftr_reg_id[peekaboo_rcx] = 1;
+						data->ftr_reg_id[PEEKABOO_RCX] = 1;
 						break;
 					case 55:
-						data->ftr_reg_id[peekaboo_rdx] = 1;
+						data->ftr_reg_id[PEEKABOO_RDX] = 1;
 						break;
 					case 56:
-						data->ftr_reg_id[peekaboo_rbx] = 1;
+						data->ftr_reg_id[PEEKABOO_RBX] = 1;
 						break;
 					case 65:
-						data->ftr_reg_id[peekaboo_rsp] = 1;
+						data->ftr_reg_id[PEEKABOO_RSP] = 1;
 						break;
 					case 66:
-						data->ftr_reg_id[peekaboo_rbx] = 1;
+						data->ftr_reg_id[PEEKABOO_RBP] = 1;
 						break;
 					case 67:
-						data->ftr_reg_id[peekaboo_rsi] = 1;
+						data->ftr_reg_id[PEEKABOO_RSI] = 1;
 						break;
 					case 68:
-						data->ftr_reg_id[peekaboo_rdi] = 1;
+						data->ftr_reg_id[PEEKABOO_RDI] = 1;
 						break;
 				}
 			} 

@@ -26,6 +26,25 @@
 #include <stddef.h>
 #include <inttypes.h>
 
+#define PEEKABOO_RDI 0
+#define PEEKABOO_RSI 1
+#define PEEKABOO_RBP 2
+#define PEEKABOO_RSP 3
+#define PEEKABOO_RBX 4
+#define PEEKABOO_RDX 5
+#define PEEKABOO_RCX 6
+#define PEEKABOO_RAX 7
+#define PEEKABOO_R8 8
+#define PEEKABOO_R9 9
+#define PEEKABOO_R10 10
+#define PEEKABOO_R11 11
+#define PEEKABOO_R12 12
+#define PEEKABOO_R13 13
+#define PEEKABOO_R14 14
+#define PEEKABOO_R15 15
+#define PEEKABOO_RFLAGS 16
+#define PEEKABOO_RIP 17
+
 typedef struct storage_option_amd64{
 	uint32_t has_simd;
 	uint32_t has_fxsave;
@@ -36,65 +55,33 @@ typedef struct storage_option_amd64{
 
 #define AMD64_NUM_SIMD_SLOTS 16
 
-enum REGISTER_GPR{
-	peekaboo_rdi,
-	peekaboo_rsi,
-	peekaboo_rbp,
-	peekaboo_rsp,
-	peekaboo_rbx,
-	peekaboo_rdx,
-	peekaboo_rcx,
-	peekaboo_rax,
-	peekaboo_r8,
-	peekaboo_r9,
-	peekaboo_r10,
-	peekaboo_r11,
-	peekaboo_r12,
-	peekaboo_r13,
-	peekaboo_r14,
-	peekaboo_r15,
-	peekaboo_rflags
-};
+// enum REGISTER_GPR{
+// 	peekaboo_rdi,
+// 	peekaboo_rsi,
+// 	peekaboo_rbp,
+// 	peekaboo_rsp,
+// 	peekaboo_rbx,
+// 	peekaboo_rdx,
+// 	peekaboo_rcx,
+// 	peekaboo_rax,
+// 	peekaboo_r8,
+// 	peekaboo_r9,
+// 	peekaboo_r10,
+// 	peekaboo_r11,
+// 	peekaboo_r12,
+// 	peekaboo_r13,
+// 	peekaboo_r14,
+// 	peekaboo_r15,
+// 	peekaboo_rflags
+// };
 
 /* Regfile */
 
 
 typedef struct {
 	uint64_t value_chg;
-	uint64_t register_number;
-}amd64_regchange_size_t;
-
-
-typedef struct {
-	uint64_t value_chg;
-	enum REGISTER_GPR register_number;
+	uint register_number;
 } amd64_cpu_gr_t;
-
-typedef struct {
-	uint64_t reg_rdi;
-	uint64_t reg_rsi;
-	uint64_t reg_rbp;
-	uint64_t reg_rsp;
-	uint64_t reg_rbx;
-	uint64_t reg_rdx;
-	uint64_t reg_rcx;
-	uint64_t reg_rax;
-	uint64_t reg_r8;
-	uint64_t reg_r9;
-	uint64_t reg_r10;
-	uint64_t reg_r11;
-	uint64_t reg_r12;
-	uint64_t reg_r13;
-	uint64_t reg_r14;
-	uint64_t reg_r15;
-	uint64_t reg_rflags;
-	uint64_t reg_rip;
-} amd64_cur_cpu_gpr_t;
-
-typedef struct {
-	uint64_t reg_value;
-	uint64_t reg_id;
-}amd64_cur_regfile_t;
 
 typedef struct {
 	uint64_t reg_cs;
@@ -169,6 +156,7 @@ typedef struct _regfile_nongpr_t{
 
 void amd64_regfile_pp(uint64_t *regfile);
 void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint64_t reg_rip, uint64_t *current_register);
+void amd64_pass_reg_bt(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint64_t *current_register);
 /* End of Regfile */
 
 #endif
