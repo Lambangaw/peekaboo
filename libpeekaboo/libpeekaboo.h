@@ -136,6 +136,10 @@ typedef struct {
 	FILE *nongpr_regfile;
 	#endif
 	peekaboo_internal_t *internal;
+	int regfile_fd;
+	int offset_regfile_fd;
+	offset_regfile_t *offset_regfile_ptr;
+	cur_register_t *cur_register_ptr;
 } peekaboo_trace_t;
 // end
 
@@ -152,6 +156,6 @@ void free_peekaboo_insn(peekaboo_insn_t *insn_ptr); // Must be called to free in
 uint64_t get_addr(size_t id, peekaboo_trace_t *trace);
 size_t get_num_insn(peekaboo_trace_t *);
 void regfile_pp(peekaboo_insn_t *insn);
-void backtrace_register(size_t id, peekaboo_trace_t *trace);
+void backtrace_register(size_t id,peekaboo_insn_t* insn, peekaboo_trace_t *trace);
 
 #endif

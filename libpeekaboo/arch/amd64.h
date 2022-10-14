@@ -155,8 +155,8 @@ typedef struct _regfile_nongpr_t{
 }regfile_nongpr_amd64_t;
 
 void amd64_regfile_pp(uint64_t *regfile);
-void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint64_t reg_rip, uint64_t *current_register);
-void amd64_pass_reg_bt(uint64_t reg_value, uint64_t reg_id,uint32_t offset_y, uint64_t *current_register);
+void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id, uint64_t reg_rip, uint64_t (*current_register)[18]);
+void amd64_pass_reg_bt(uint64_t reg_value, uint64_t reg_id, uint64_t *current_register);
 /* End of Regfile */
 
 #endif

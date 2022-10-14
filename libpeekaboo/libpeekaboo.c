@@ -20,10 +20,13 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 
 #include "libpeekaboo.h"
-#define MAX_ITERATION 8192
+#define MAX_ITERATION 128
 
+uint iteration = 0;			
 int create_folder(char *name, char *output, uint32_t max_size)
 {
 	DIR *dir = opendir(name);
@@ -372,8 +375,9 @@ void load_trace(char *dir_path, peekaboo_trace_t *trace_ptr)
 	if (trace_ptr->insn_trace == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
 
 	snprintf(path, MAX_PATH, "%s/%s", dir_path, "regfile");
-	trace_ptr->regfile = fopen(path, "rb");
-	if (trace_ptr->regfile == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
+	// trace_ptr->regfile = fopen(path, "rb");
+	trace_ptr->regfile_fd = open(path, O_RDONLY);
+	if (trace_ptr->regfile_fd == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
 
 	snprintf(path, MAX_PATH, "%s/%s", dir_path, "memfile");
 	trace_ptr->memfile = fopen(path, "rb");
@@ -384,8 +388,8 @@ void load_trace(char *dir_path, peekaboo_trace_t *trace_ptr)
 	if (trace_ptr->memrefs == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
 
 	snprintf(path, MAX_PATH, "%s/%s", dir_path, "offset_regfile");
-	trace_ptr->offset_regfile = fopen(path, "rb");
-	if (trace_ptr->offset_regfile == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
+	trace_ptr->offset_regfile_fd = open(path, O_RDONLY);
+	if (trace_ptr->offset_regfile_fd == NULL) PEEKABOO_DIE("libpeekaboo: Unable to load %s\n", path);
 	
 	#if defined _STORE_SIMD || defined _STORE_FXSAVE
 	if(trace_ptr->internal->storage_options.amd64.has_simd || trace_ptr->internal->storage_options.amd64.has_fxsave)
@@ -411,6 +415,19 @@ void load_trace(char *dir_path, peekaboo_trace_t *trace_ptr)
 	// load memrefs_offsets. Create if not exist 
 	load_memrefs_offsets(dir_path, trace_ptr);
 
+	// mmaping offset_register file
+	int size_offset_regfile;
+	struct stat stat_offset_regfile;
+	int status_ofset_regfile = fstat (trace_ptr->offset_regfile_fd, &stat_offset_regfile);
+	size_offset_regfile = stat_offset_regfile.st_size;
+	trace_ptr->offset_regfile_ptr = (offset_regfile_t *) mmap (0, size_offset_regfile, PROT_READ, MAP_PRIVATE, trace_ptr->offset_regfile_fd, 0);
+
+	// mmaping register file
+	int size;
+	struct stat s;
+	int status = fstat (trace_ptr->regfile_fd, &s);
+	size = s.st_size;
+	trace_ptr->cur_register_ptr = (cur_register_t *) mmap (0, size, PROT_READ, MAP_PRIVATE, trace_ptr->regfile_fd, 0);
 	// All good. Ready to go~!
 	return ;
 }
@@ -419,7 +436,8 @@ void free_peekaboo_trace(peekaboo_trace_t *trace_ptr)
 {
 	fclose(trace_ptr->bytes_map);
 	fclose(trace_ptr->insn_trace);
-	fclose(trace_ptr->regfile);
+	close(trace_ptr->regfile_fd);
+	close(trace_ptr->offset_regfile_fd);
 	fclose(trace_ptr->memfile);
 	fclose(trace_ptr->memrefs);
 	#if defined _STORE_SIMD || defined _STORE_FXSAVE
@@ -460,47 +478,44 @@ void write_metadata(peekaboo_trace_t *trace_ptr, enum ARCH arch, uint32_t versio
 	fclose(trace_ptr->metafile);
 }
 
-void backtrace_register(size_t id, peekaboo_trace_t *trace){
+void backtrace_register(size_t id,peekaboo_insn_t *insn, peekaboo_trace_t *trace){
 	size_t offset_regfile_size = sizeof(offset_regfile_t);
 	uint32_t instr_id;
-	uint32_t offset_y;
+	uint32_t offset_regfile_idx, num_register_change;
 	uint64_t reg_rip;
 	uint64_t reg_value;
 	uint64_t reg_id;
-	cur_register_t *cur_register_ptr;
-	cur_register_ptr = (cur_register_t *)malloc(sizeof(cur_register_t));
-	offset_regfile_t *offset_rg;
-	offset_rg = (offset_regfile_t *)malloc(sizeof(offset_regfile_t));
-	// offset id
-	fseek(trace->offset_regfile, (id-1) * offset_regfile_size, SEEK_SET);
-	fread(&(instr_id), sizeof(offset_regfile_t), 1, trace->offset_regfile);
-
-	fseek(trace->offset_regfile, (id-1) * offset_regfile_size + sizeof(uint32_t), SEEK_SET);
-	fread(&(offset_y), sizeof(offset_regfile_t), 1, trace->offset_regfile);
-	// rip
-	fseek(trace->offset_regfile, (id-1) * offset_regfile_size + (sizeof(uint32_t)*2), SEEK_SET);
-	fread(&reg_rip, 8, 1, trace->offset_regfile);
-	uint32_t buf_off = offset_y;
-		for(int j=0; j < buf_off ; j++){
-			fseek(trace->regfile, (instr_id) * sizeof(cur_register_t) + j * (sizeof(cur_register_t) ), SEEK_SET);
-			fread(&(reg_value), sizeof(cur_register_t) , 1, trace->regfile);
-
-			fseek(trace->regfile, (instr_id) * sizeof(cur_register_t) + j * (sizeof(cur_register_t) ) + (sizeof(uint64_t) ), SEEK_SET);
-			fread(&(reg_id), sizeof(cur_register_t) , 1, trace->regfile);
-			if(buf_backtracking_reg[reg_id] == false)
-			{
-				amd64_pass_reg(reg_value,reg_id, 1, reg_rip, &buf_current_register);
-				buf_backtracking_reg[reg_id] = true;
-			}
+	
+	offset_regfile_t *bt_offset_rg;
+	bt_offset_rg = (offset_regfile_t *)malloc(sizeof(offset_regfile_t));
+	memcpy(bt_offset_rg, &((offset_regfile_t *) trace->offset_regfile_ptr)[id-1],sizeof(offset_regfile_t));
+	cur_register_t *bt_cur_register_ptr;
+	printf("offset idx %d num reg %d\n",bt_offset_rg->offset_idx,bt_offset_rg->num_register_change);
+	printf("addr off %p\n",bt_offset_rg);
+	for(int j=0; j < bt_offset_rg->num_register_change ; j++){
+		bt_cur_register_ptr = (cur_register_t *)malloc(sizeof(cur_register_t));
+		memcpy(bt_cur_register_ptr,&trace->cur_register_ptr[bt_offset_rg->offset_idx + (j*2)],sizeof(cur_register_t)*bt_offset_rg->num_register_change);
+		printf("addr %p\n",bt_cur_register_ptr);
+		if(buf_backtracking_reg[bt_cur_register_ptr->reg_id]== false)
+		{
+			// printf("reg val %lx reg id %d --> [%d]\n",bt_cur_register_ptr[(bt_offset_rg[id-1].offset_idx) + j].reg_value, bt_cur_register_ptr[(bt_offset_rg[id-1].offset_idx) + j].reg_id,(bt_offset_rg[id-1].offset_idx * 2) + j);
+			
+			amd64_pass_reg_bt(bt_cur_register_ptr->reg_value, bt_cur_register_ptr->reg_id, (uint64_t *)&(insn->reg_gpr));
+			buf_backtracking_reg[bt_cur_register_ptr->reg_id] = true;
 		}
-	free(cur_register_ptr);
 
-	uint iteration;
+	free(bt_cur_register_ptr);
+					
+	}
+
+	// munmap(bt_cur_register_ptr,sizeof(cur_register_t));
+	free(bt_offset_rg);
 	while(iteration < MAX_ITERATION){
+		iteration++;
 		for(int x=0;x<17;x++){
 			if((id-1)>0 && !buf_backtracking_reg[x])
 			{
-				backtrace_register(--id, trace);
+				backtrace_register(--id,insn, trace);
 			}else{
 				iteration = MAX_ITERATION;
 			}
@@ -511,9 +526,9 @@ void backtrace_register(size_t id, peekaboo_trace_t *trace){
 }
 
 // It is caller's duty to free peekaboo insn ptr. Call free_peekaboo_insn() to do so.
-peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace,const bool require_backtracking)
-{
-	// printf("id %d\n",id);
+peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace, bool require_backtracking)
+{	
+	// require_backtracking = 0;
 	// insn is the peekaboo instruction record
 	peekaboo_insn_t *insn = malloc(sizeof(peekaboo_insn_t));
 	// bzero(insn,sizeof(peekaboo_insn_t));
@@ -550,11 +565,8 @@ peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace,cons
             	PEEKABOO_DIE("Abort! Broken memrefs_offsets. Remove memrefs_offsets in trace folder and try again.\n");
 		}
 	}
-
-
 	
-	
-		int sum = id;
+		
 		switch (insn->arch)
 		{
 			case ARCH_AMD64:
@@ -562,42 +574,21 @@ peekaboo_insn_t *get_peekaboo_insn(const size_t id, peekaboo_trace_t *trace,cons
 					
 					if(require_backtracking)
 					{
-					backtrace_register(id,trace);
-					memcpy(insn->reg_gpr, buf_current_register, sizeof(uint64_t)*18);
+					backtrace_register(id,insn,trace);
+					// insn->reg_gpr[17] = insn_offset_rg[id-1].reg_rip;
 					}else{
-					size_t offset_regfile_size = sizeof(offset_regfile_t);
-					uint32_t offset_x;
-					uint32_t offset_y;
-					uint64_t reg_rip;
-					uint64_t reg_value;
-					uint64_t *reg_id;
-					offset_regfile_t *offset_rg;
-					cur_register_t *cur_register_ptr;
-					offset_rg = (offset_regfile_t *)malloc(sizeof(offset_regfile_t));
-					// offset id
-					fseek(trace->offset_regfile, (id-1) * offset_regfile_size, SEEK_SET);
-					fread(&(*offset_rg), sizeof(offset_regfile_t), 1, trace->offset_regfile);
+					offset_regfile_t *insn_offset_rg;
+					insn_offset_rg = (offset_regfile_t *)malloc(sizeof(offset_regfile_t));
+					insn_offset_rg = trace->offset_regfile_ptr;
 
-					// rip
-					fseek(trace->offset_regfile, (id-1) * offset_regfile_size + (sizeof(uint32_t)*2), SEEK_SET);
-					fread(&reg_rip, 8, 1, trace->offset_regfile);
+					cur_register_t *insn_cur_register_ptr;
+					insn_cur_register_ptr = (cur_register_t *)malloc(sizeof(cur_register_t));
+					insn_cur_register_ptr = trace->cur_register_ptr;
 
-						for(int j=0; j < offset_rg->num_register_change ; j++){
-							uint64_t buf_register;
-							cur_register_ptr = (cur_register_t *)malloc(sizeof(cur_register_t));
-							// printf("off %d idx %d\n",(uint32_t)offset_rg->offset_idx,(offset_rg->offset_idx) * sizeof(cur_register_t) + j * sizeof(cur_register_t));
-
-							fseek(trace->regfile, (offset_rg->offset_idx) * sizeof(cur_register_t) + j * sizeof(cur_register_t), SEEK_SET);
-							fread(&(cur_register_ptr), (offset_rg->num_register_change)  * sizeof(cur_register_t) , 1, trace->regfile);
-
-							reg_id = (uint64_t) (&cur_register_ptr) + sizeof(uint64_t);
-
-							amd64_pass_reg((uint64_t)&cur_register_ptr->reg_value, (uint64_t)*reg_id, 1, reg_rip, &buf_current_register);
-							memcpy(insn->reg_gpr, buf_current_register, sizeof(uint64_t)*18);
-							free(cur_register_ptr);
-										
+					for(int j=0; j < insn_offset_rg[id-1].num_register_change ; j++){
+						amd64_pass_reg(insn_cur_register_ptr[(insn_offset_rg[id-1].offset_idx) + j].reg_value, insn_cur_register_ptr[(insn_offset_rg[id-1].offset_idx) + j].reg_id, insn_offset_rg[id-1].reg_rip, (uint64_t *)&(insn->reg_gpr));
+									
 						}
-					free(offset_rg);
 					}
 					
 				break;
