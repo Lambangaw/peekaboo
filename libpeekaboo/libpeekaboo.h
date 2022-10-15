@@ -102,8 +102,7 @@ typedef struct {
 	uint64_t reg_gpr[18];
 } peekaboo_insn_t;
 
-uint64_t *buf_current_register[18];
-bool *buf_backtracking_reg[18];
+bool buf_backtracking_reg[18];
 
 typedef struct {
 	uint32_t arch;

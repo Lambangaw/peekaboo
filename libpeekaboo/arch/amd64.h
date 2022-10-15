@@ -55,25 +55,6 @@ typedef struct storage_option_amd64{
 
 #define AMD64_NUM_SIMD_SLOTS 16
 
-// enum REGISTER_GPR{
-// 	peekaboo_rdi,
-// 	peekaboo_rsi,
-// 	peekaboo_rbp,
-// 	peekaboo_rsp,
-// 	peekaboo_rbx,
-// 	peekaboo_rdx,
-// 	peekaboo_rcx,
-// 	peekaboo_rax,
-// 	peekaboo_r8,
-// 	peekaboo_r9,
-// 	peekaboo_r10,
-// 	peekaboo_r11,
-// 	peekaboo_r12,
-// 	peekaboo_r13,
-// 	peekaboo_r14,
-// 	peekaboo_r15,
-// 	peekaboo_rflags
-// };
 
 /* Regfile */
 
@@ -155,7 +136,7 @@ typedef struct _regfile_nongpr_t{
 }regfile_nongpr_amd64_t;
 
 void amd64_regfile_pp(uint64_t *regfile);
-void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id, uint64_t reg_rip, uint64_t (*current_register)[18]);
+void amd64_pass_reg(uint64_t reg_value, uint64_t reg_id, uint64_t reg_rip, uint64_t *current_register);
 void amd64_pass_reg_bt(uint64_t reg_value, uint64_t reg_id, uint64_t *current_register);
 /* End of Regfile */
 
