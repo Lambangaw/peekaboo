@@ -22,12 +22,20 @@
 #include <dirent.h>
 #include <sys/time.h>
 #include <time.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 
 
 #define MAX_PATH (256)
 #define LIBPEEKABOO_VER 004
 
 #define PEEKABOO_DIE(...) {fprintf(stderr, __VA_ARGS__); exit(1);}
+#define MAX_ITERATION 8192
 
 //------Supported archs declarations-----------------------
 #include "common.h"
@@ -98,7 +106,7 @@ typedef struct {
 	uint8_t rawbytes[16];
 	size_t num_mem;
 	memfile_t mem[8];
-	uint32_t arch;;
+	uint32_t arch;
 	uint64_t reg_gpr[18];
 } peekaboo_insn_t;
 

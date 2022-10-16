@@ -20,7 +20,6 @@
 #ifndef __LIBPEEKABOO_AMD64_H__
 #define __LIBPEEKABOO_AMD64_H__
 
-#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -61,7 +60,7 @@ typedef struct storage_option_amd64{
 
 typedef struct {
 	uint64_t value_chg;
-	uint register_number;
+	uint64_t register_number;
 } amd64_cpu_gr_t;
 
 typedef struct {

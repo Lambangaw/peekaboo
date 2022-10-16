@@ -469,7 +469,7 @@ static void instrument_mem(void *drcontext, instrlist_t *ilist, instr_t *where, 
 	drx_buf_insert_update_buf_ptr(drcontext, memfile_buf, ilist, where, reg_ptr, reg_tmp, sizeof(memfile_t));
 
 	//printf("sizesize:%d\n", size);
-	// disassemble_with_info(drcontext, instr_get_app_pc(where), 0, true, true);
+	//disassemble_with_info(drcontext, instr_get_app_pc(where), 0, true, true);
 
 	if (drreg_unreserve_register(drcontext, ilist, where, reg_ptr) != DRREG_SUCCESS ||
 	    drreg_unreserve_register(drcontext, ilist, where, reg_tmp) != DRREG_SUCCESS)
@@ -488,7 +488,7 @@ static void instrument_insn(void *drcontext, instrlist_t *ilist, instr_t *where,
 
 	int insn_len = instr_length(drcontext, where);
 	app_pc pc = instr_get_app_pc(where);
-	// reg_linked_list_t *current;
+
 	// instrument update to insn_ref, pushes a 32/64-bit pc into the buffer
 	drx_buf_insert_load_buf_ptr(drcontext, insn_ref_buf, ilist, where, reg_ptr);
 	#ifdef X64
@@ -522,9 +522,10 @@ static void instrument_insn(void *drcontext, instrlist_t *ilist, instr_t *where,
 			// ZL: insert a write 0 into the stream using dynamorio sanctioned instruction to trigger the flushing of file from trace buffer.
 			drx_buf_insert_buf_store(drcontext, offset_regfile_buf, ilist, where, reg_ptr, reg_tmp, OPND_CREATE_INT32(0), OPSZ_4, 0);
 			dr_insert_clean_call(drcontext, ilist, where, (void *)trace_offset_register, false, 1, OPND_CREATE_INT64(pc));
-			// raise(SIGINT);
+
 			#ifdef X86
 				#ifdef X64
+					// KH: We save app_pc+instr_len into reg_rip, though it is not the actually rip.
 					drx_buf_insert_buf_store(drcontext, offset_regfile_buf, ilist, where, reg_ptr, reg_tmp, OPND_CREATE_INT64(pc+insn_len), OPSZ_8, offsetof(offset_regfile_t, reg_rip) );
 				#else
 				// We currently don't have eip reg for 32bit X86

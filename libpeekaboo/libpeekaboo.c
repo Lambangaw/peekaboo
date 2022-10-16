@@ -14,17 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-
 #include "libpeekaboo.h"
-#define MAX_ITERATION 8192
 
 uint iteration = 0;			
 int create_folder(char *name, char *output, uint32_t max_size)
