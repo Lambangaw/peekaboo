@@ -100,7 +100,7 @@ static drx_buf_t *nongpr_regfile_buf;
 		typedef regfile_amd64_t regfile_t;
 		typedef regfile_nongpr_amd64_t regfile_nongpr_t;
 		const storage_option_amd64_t storage_option;
-		void save_register(void *drcontext, uint64_t reg_id, uint64_t value)
+		void save_register(void *drcontext, uint64_t reg_id, uint64_t value);
 		void save_offset_register(void *drcontext, offset_regfile_t *offset_regfile, per_thread_t *data)
 		{
 			offset_regfile_index = offset_regfile_index + num_dst_buf;

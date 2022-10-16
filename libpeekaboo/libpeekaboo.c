@@ -479,18 +479,15 @@ void write_metadata(peekaboo_trace_t *trace_ptr, enum ARCH arch, uint32_t versio
 }
 
 void backtrace_register(size_t id,peekaboo_insn_t *insn, peekaboo_trace_t *trace){
-	size_t offset_regfile_size = sizeof(offset_regfile_t);
-	uint32_t instr_id;
 	uint32_t offset_regfile_idx, num_register_change;
-	uint64_t reg_rip;
-	uint64_t reg_value;
-	uint64_t reg_id;
 	
 	offset_regfile_t *bt_offset_rg;
 	bt_offset_rg = (offset_regfile_t *)malloc(sizeof(offset_regfile_t));
 	memcpy(bt_offset_rg, &((offset_regfile_t *) trace->offset_regfile_ptr)[id-1],sizeof(offset_regfile_t));
 	cur_register_t *bt_cur_register_ptr;
+
 	for(int j=0; j < bt_offset_rg->num_register_change ; j++){
+		
 		bt_cur_register_ptr = (cur_register_t *)malloc(sizeof(cur_register_t));
 		memcpy(bt_cur_register_ptr, &((cur_register_t *) trace->cur_register_ptr)[bt_offset_rg->offset_idx + (j)], sizeof(cur_register_t));
 		if(buf_backtracking_reg[bt_cur_register_ptr->reg_id]== false)
@@ -504,6 +501,7 @@ void backtrace_register(size_t id,peekaboo_insn_t *insn, peekaboo_trace_t *trace
 	}
 	free(bt_offset_rg);
 
+	// maintain maximum stack size in case register never been used
 	while(iteration < MAX_ITERATION){
 		iteration++;
 		for(int x=0;x<17;x++){
